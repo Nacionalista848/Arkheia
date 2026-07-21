@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkheia | Enciclopedia Universal de Biodiversidad</title>
     
-    <title>Arkheia | Enciclopedia de Especies y Animales Extintos</title>
-    <meta name="description" content="Busca información detallada sobre millones de especies de animales, plantas y seres extintos en Arkheia, la base de datos de biodiversidad mundial.">
-    <meta name="keywords" content="biologia, animales, especies extintas, dinosaurios, naturaleza, enciclopedia animal, arkheia">
-    <meta name="author" content="Arkheia Team">
-
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f4f1;
+            color: #2c3e50;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -22,75 +18,110 @@
             min-height: 100vh;
         }
         .search-container {
-            text-align: center;
             background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 600px;
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            max-width: 700px;
             width: 90%;
-            margin-top: 50px;
+            text-align: center;
+            margin-top: 30px;
         }
         h1 {
-            color: #2c5d3f; 
-            font-size: 3rem;
-            margin-bottom: 10px;
+            color: #1b4d3e; 
+            font-size: 3.5rem;
+            margin: 0 0 10px 0;
+            font-weight: 800;
+            letter-spacing: -1px;
         }
-        p {
-            color: #666;
-            margin-bottom: 30px;
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
         }
         .search-box {
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
         input[type="text"] {
             flex: 1;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
             font-size: 16px;
             outline: none;
+            transition: border-color 0.3s;
         }
         input[type="text"]:focus {
-            border-color: #2c5d3f;
+            border-color: #1b4d3e;
         }
         button {
-            background-color: #2c5d3f;
+            background-color: #1b4d3e;
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 15px 28px;
+            border-radius: 12px;
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
+            transition: background 0.2s;
         }
         button:hover {
-            background-color: #1e3f2b;
+            background-color: #113327;
         }
-        /* Estilos para los resultados */
-        .card {
-            background: #fff;
-            border-left: 5px solid #2c5d3f;
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        /* Estilos de la Ficha del Animal */
+        .species-card {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-top: 30px;
             text-align: left;
+            border: 1px solid #eef2f0;
         }
-        .card h2 {
-            margin-top: 0;
-            color: #2c5d3f;
+        .species-image {
+            width: 100%;
+            max-height: 350px;
+            object-fit: cover;
+            background-color: #eaeaea;
         }
-        .info-item {
-            margin: 8px 0;
+        .species-content {
+            padding: 25px;
         }
-        .badge {
-            background: #e0e0e0;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
+        .species-title {
+            font-size: 2rem;
+            color: #1b4d3e;
+            margin: 0 0 5px 0;
+        }
+        .species-scientific {
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+        .description-text {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+        }
+        .taxo-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            background: #f8faf9;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .taxo-item {
+            font-size: 0.95rem;
+        }
+        .taxo-item strong {
+            color: #1b4d3e;
+        }
+        .loading {
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 20px;
         }
     </style>
 </head>
@@ -98,56 +129,81 @@
 
     <div class="search-container">
         <h1>Arkheia</h1>
-        <p>Explora la biodiversidad del planeta, desde el origen hasta las especies extintas.</p>
+        <div class="subtitle">El motor de búsqueda definitivo para la biodiversidad y especies extintas.</div>
         
         <div class="search-box">
-            <input type="text" id="animalInput" placeholder="Ej: Panthera leo, Tyrannosaurus...">
-            <button onclick="buscarEspecie()">Buscar</button>
+            <input type="text" id="animalInput" placeholder="Busca un animal (Ej: León, T-Rex, Dodo, Puma...)">
+            <button onclick="ejecutarBusquedaCompleta()">Explorar</button>
         </div>
         
         <div id="resultado"></div>
     </div>
 
     <script>
-        // CONEXIÓN A LA BASE DE DATOS CIENTÍFICA (GBIF API)
-        async function buscarEspecie() {
-            const busqueda = document.getElementById('animalInput').value.trim();
-            const contenedorResultado = document.getElementById('resultado');
+        async function ejecutarBusquedaCompleta() {
+            const query = document.getElementById('animalInput').value.trim();
+            const contenedor = document.getElementById('resultado');
             
-            if(!busqueda) {
-                alert("Por favor, escribe el nombre de una especie.");
+            if(!query) {
+                alert("Escribe el nombre de una especie primero.");
                 return;
             }
 
-            contenedorResultado.innerHTML = `<p>Buscando en la base de datos global de Arkheia...</p>`;
+            contenedor.innerHTML = `<div class="loading">Consultando bases de datos biológicas y archivos enciclopédicos...</div>`;
 
             try {
-                // Hacemos la consulta a la base de datos mundial de biodiversidad
-                const url = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(busqueda)}&limit=1`;
-                const respuesta = await fetch(url);
-                const datos = await respuesta.json();
+                // 1. Buscamos primero en Wikipedia para obtener texto e imagen en español
+                const wikiUrl = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+                const wikiRes = await fetch(wikiUrl);
+                
+                // 2. Buscamos en la base de datos científica GBIF para taxonomía
+                const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(query)}&limit=1`;
+                const gbifRes = await fetch(gbifUrl);
+                
+                const wikiDatos = await wikiRes.json();
+                const gbifDatos = await gbifRes.json();
 
-                if (datos.results && datos.results.length > 0) {
-                    const especie = datos.results[0];
+                if (wikiDatos.type === 'standard' || (gbifDatos.results && gbifDatos.results.length > 0)) {
                     
-                    // Armamos la respuesta en la pantalla con los datos reales
-                    contenedorResultado.innerHTML = `
-                        <div class="card">
-                            <h2>${especie.scientificName}</h2>
-                            <div class="info-item"><strong>Reino:</strong> ${especie.kingdom || 'Desconocido'}</div>
-                            <div class="info-item"><strong>Filo (Clase):</strong> ${especie.phylum || 'Desconocido'} -> ${especie.class || 'Desconocido'}</div>
-                            <div class="info-item"><strong>Familia:</strong> ${especie.family || 'Desconocido'}</div>
-                            <div class="info-item"><strong>Género:</strong> ${especie.genus || 'Desconocido'}</div>
-                            <div class="info-item"><strong>Estado taxonómico:</strong> <span class="badge">${especie.taxonomicStatus || 'Aceptado'}</span></div>
+                    // Extraemos datos de Wikipedia
+                    const titulo = wikiDatos.title || query;
+                    const descripcion = wikiDatos.extract || "No hay una descripción detallada disponible en este momento.";
+                    const imagenUrl = wikiDatos.thumbnail ? wikiDatos.thumbnail.source : 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=700'; // Imagen por defecto si no hay
+                    
+                    // Extraemos datos científicos de GBIF
+                    const ciencia = gbifDatos.results[0] || {};
+                    const nombreCientifico = ciencia.scientificName || "Clasificación no registrada";
+                    const reino = ciencia.kingdom || "Animalia/Plantae";
+                    const filo = ciencia.phylum || "No registrado";
+                    const clase = ciencia.class || "No registrado";
+                    const familia = ciencia.family || "No registrado";
+
+                    // Inyectamos todo el contenido estructurado en la interfaz
+                    contenedor.innerHTML = `
+                        <div class="species-card">
+                            <img class="species-image" src="${imagenUrl}" alt="${titulo}">
+                            <div class="species-content">
+                                <h2 class="species-title">${titulo}</h2>
+                                <div class="species-scientific">${nombreCientifico}</div>
+                                <p class="description-text">${descripcion}</p>
+                                
+                                <h3>Clasificación Biológica</h3>
+                                <div class="taxo-grid">
+                                    <div class="taxo-item"><strong>Reino:</strong> ${reino}</div>
+                                    <div class="taxo-item"><strong>Filo:</strong> ${filo}</div>
+                                    <div class="taxo-item"><strong>Clase:</strong> ${clase}</div>
+                                    <div class="taxo-item"><strong>Familia:</strong> ${familia}</div>
+                                </div>
+                            </div>
                         </div>
                     `;
                 } else {
-                    contenedorResultado.innerHTML = `<p style="color: red;">No se encontraron registros biológicos para "${busqueda}". Intenta con el nombre científico o inglés (ej: Tyrannosaurus, Puma concolor, Dodo).</p>`;
+                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos datos suficientes sobre "${query}". Intenta verificar la ortografía o usar nombres comunes conocidos.</p>`;
                 }
 
             } catch (error) {
                 console.error(error);
-                contenedorResultado.innerHTML = `<p style="color: red;">Hubo un error al conectar con la base de datos externa.</p>`;
+                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al conectar con los servidores de Arkheia.</p>`;
             }
         }
     </script>
