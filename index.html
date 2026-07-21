@@ -22,8 +22,8 @@
             padding: 35px;
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-            max-width: 700px;
-            width: 90%;
+            max-width: 900px;
+            width: 95%;
             text-align: center;
             margin-top: 30px;
         }
@@ -51,7 +51,6 @@
             border-radius: 12px;
             font-size: 16px;
             outline: none;
-            transition: border-color 0.3s;
         }
         input[type="text"]:focus {
             border-color: #1b4d3e;
@@ -65,12 +64,10 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            transition: background 0.2s;
         }
         button:hover {
             background-color: #113327;
         }
-        /* Estilos de la Ficha del Animal */
         .species-card {
             background: #ffffff;
             border-radius: 16px;
@@ -82,38 +79,71 @@
         }
         .species-image {
             width: 100%;
-            max-height: 350px;
+            max-height: 450px;
             object-fit: cover;
             background-color: #eaeaea;
         }
         .species-content {
-            padding: 25px;
+            padding: 35px;
         }
         .species-title {
-            font-size: 2rem;
+            font-size: 2.8rem;
             color: #1b4d3e;
             margin: 0 0 5px 0;
         }
         .species-scientific {
             font-style: italic;
             color: #7f8c8d;
-            margin-bottom: 15px;
+            font-size: 1.3rem;
+            margin-bottom: 25px;
         }
-        .description-text {
-            line-height: 1.6;
+        
+        /* Contenedor masivo de Wikipedia limpia */
+        .wiki-full-content {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .wiki-full-content h2 {
+            color: #1b4d3e;
+            border-bottom: 2px solid #eef2f0;
+            padding-bottom: 8px;
+            margin-top: 35px;
+            font-size: 1.6rem;
+        }
+        .wiki-full-content h3 {
+            color: #2c5d3f;
+            margin-top: 25px;
+        }
+        .wiki-full-content p {
             margin-bottom: 20px;
-            font-size: 1.05rem;
+            text-align: justify;
+        }
+        .wiki-full-content ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Tabla Taxonómica Mejorada */
+        .taxo-box {
+            background: #f8faf9;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+            border: 1px solid #e8edea;
+        }
+        .taxo-box h3 {
+            margin-top: 0;
+            color: #1b4d3e;
         }
         .taxo-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            background: #f8faf9;
-            padding: 15px;
-            border-radius: 8px;
+            gap: 15px;
         }
         .taxo-item {
-            font-size: 0.95rem;
+            font-size: 1.05rem;
         }
         .taxo-item strong {
             color: #1b4d3e;
@@ -132,15 +162,15 @@
         <div class="subtitle">El motor de búsqueda definitivo para la biodiversidad y especies extintas.</div>
         
         <div class="search-box">
-            <input type="text" id="animalInput" placeholder="Busca un animal (Ej: León, T-Rex, Dodo, Puma...)">
-            <button onclick="ejecutarBusquedaCompleta()">Explorar</button>
+            <input type="text" id="animalInput" placeholder="Busca cualquier especie (Ej: Dodo, Tiranosaurio, León, Lobo)">
+            <button onclick="ejecutarBusquedaMasiva()">Explorar</button>
         </div>
         
         <div id="resultado"></div>
     </div>
 
     <script>
-        async function ejecutarBusquedaCompleta() {
+        async function ejecutarBusquedaMasiva() {
             const query = document.getElementById('animalInput').value.trim();
             const contenedor = document.getElementById('resultado');
             
@@ -149,45 +179,80 @@
                 return;
             }
 
-            contenedor.innerHTML = `<div class="loading">Consultando bases de datos biológicas y archivos enciclopédicos...</div>`;
+            contenedor.innerHTML = `<div class="loading">Conectando con bases científicas. Extrayendo artículo enciclopédico completo...</div>`;
 
             try {
-                // 1. Buscamos primero en Wikipedia para obtener texto e imagen en español
-                const wikiUrl = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+                // 1. Buscamos el texto e imágenes estructuradas completas de Wikipedia móvil (viene más limpio)
+                const wikiUrl = `https://es.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(query)}`;
                 const wikiRes = await fetch(wikiUrl);
                 
-                // 2. Buscamos en la base de datos científica GBIF para taxonomía
-                const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(query)}&limit=1`;
-                const gbifRes = await fetch(gbifUrl);
+                // 2. Buscamos el resumen para la imagen en alta calidad
+                const summaryUrl = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+                const summaryRes = await fetch(summaryUrl);
                 
+                // 3. Consulta para verificar la taxonomía exacta libre de errores cruzados
+                const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(query)}&limit=10`;
+                const gbifRes = await fetch(gbifUrl);
+
+                if (!wikiRes.ok) {
+                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos un documento extenso para "${query}". Intenta con su nombre común exacto.</p>`;
+                    return;
+                }
+
                 const wikiDatos = await wikiRes.json();
+                const summaryDatos = await summaryRes.json();
                 const gbifDatos = await gbifRes.json();
 
-                if (wikiDatos.type === 'standard' || (gbifDatos.results && gbifDatos.results.length > 0)) {
-                    
-                    // Extraemos datos de Wikipedia
-                    const titulo = wikiDatos.title || query;
-                    const descripcion = wikiDatos.extract || "No hay una descripción detallada disponible en este momento.";
-                    const imagenUrl = wikiDatos.thumbnail ? wikiDatos.thumbnail.source : 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=700'; // Imagen por defecto si no hay
-                    
-                    // Extraemos datos científicos de GBIF
-                    const ciencia = gbifDatos.results[0] || {};
-                    const nombreCientifico = ciencia.scientificName || "Clasificación no registrada";
-                    const reino = ciencia.kingdom || "Animalia/Plantae";
-                    const filo = ciencia.phylum || "No registrado";
-                    const clase = ciencia.class || "No registrado";
-                    const familia = ciencia.family || "No registrado";
+                // Unimos todas las secciones de texto de Wikipedia en un bloque gigante de lectura continua
+                let textoCompletoHTML = "";
+                
+                // Sección introductoria
+                if(wikiDatos.lead && wikiDatos.lead.sections) {
+                    textoCompletoHTML += wikiDatos.lead.sections[0].text;
+                }
+                
+                // Resto de las secciones (Historia, alimentación, extinción, etc.)
+                if(wikiDatos.remaining && wikiDatos.remaining.sections) {
+                    wikiDatos.remaining.sections.forEach(sec => {
+                        // Saltamos las referencias o enlaces finales para que quede limpio
+                        if(sec.anchor !== "Referencias" && sec.anchor !== "Enlaces_externos" && sec.anchor !== "Bibliografía") {
+                            textoCompletoHTML += `<h2>${sec.line}</h2>` + sec.text;
+                        }
+                    });
+                }
 
-                    // Inyectamos todo el contenido estructurado en la interfaz
-                    contenedor.innerHTML = `
-                        <div class="species-card">
-                            <img class="species-image" src="${imagenUrl}" alt="${titulo}">
-                            <div class="species-content">
-                                <h2 class="species-title">${titulo}</h2>
-                                <div class="species-scientific">${nombreCientifico}</div>
-                                <p class="description-text">${descripcion}</p>
-                                
-                                <h3>Clasificación Biológica</h3>
+                // Limpiamos etiquetas raras de Wikipedia que rompen el diseño (como enlaces internos rotos)
+                textoCompletoHTML = textoCompletoHTML.replace(/<a href="[^"]*">/g, "");
+                textoCompletoHTML = textoCompletoHTML.replace(/<\/a>/g, "");
+                textoCompletoHTML = textoCompletoHTML.replace(/<span class="[^"]*">/g, "");
+                textoCompletoHTML = textoCompletoHTML.replace(/<\/span>/g, "");
+
+                // Asignamos imagen principal
+                const imagenUrl = summaryDatos.thumbnail ? summaryDatos.thumbnail.source : 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=900';
+
+                // Corregir taxonomía biológica cruzada
+                let ciencia = {};
+                if (gbifDatos.results && gbifDatos.results.length > 0) {
+                    // Si el nombre buscado es Dodo o similar, forzamos que traiga el registro de las aves/animales correctos
+                    ciencia = gbifDatos.results.find(r => r.class === 'Aves' || r.kingdom === 'Animalia') || gbifDatos.results[0];
+                }
+
+                const nombreCientifico = ciencia.scientificName || summaryDatos.title || query;
+                const reino = ciencia.kingdom || "Animalia";
+                const filo = ciencia.phylum || "Chordata (Vertebrados)";
+                const clase = ciencia.class || "Clasificación registrada en el texto";
+                const familia = ciencia.family || "Ver detalle en el artículo";
+
+                // Desplegamos la enciclopedia masiva en la pantalla
+                contenedor.innerHTML = `
+                    <div class="species-card">
+                        <img class="species-image" src="${imagenUrl}" alt="${summaryDatos.title}">
+                        <div class="species-content">
+                            <h2 class="species-title">${summaryDatos.title || query}</h2>
+                            <div class="species-scientific">${nombreCientifico}</div>
+                            
+                            <div class="taxo-box">
+                                <h3>Clasificación Biológica Oficial</h3>
                                 <div class="taxo-grid">
                                     <div class="taxo-item"><strong>Reino:</strong> ${reino}</div>
                                     <div class="taxo-item"><strong>Filo:</strong> ${filo}</div>
@@ -195,15 +260,17 @@
                                     <div class="taxo-item"><strong>Familia:</strong> ${familia}</div>
                                 </div>
                             </div>
+
+                            <div class="wiki-full-content">
+                                ${textoCompletoHTML}
+                            </div>
                         </div>
-                    `;
-                } else {
-                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos datos suficientes sobre "${query}". Intenta verificar la ortografía o usar nombres comunes conocidos.</p>`;
-                }
+                    </div>
+                `;
 
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al conectar con los servidores de Arkheia.</p>`;
+                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al procesar la base de datos de Arkheia.</p>`;
             }
         }
     </script>
