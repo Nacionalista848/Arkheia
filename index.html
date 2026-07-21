@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Arkheia | Enciclopedia de Especies y Animales Extintos</title>
+    <meta name="description" content="Busca información detallada sobre millones de especies de animales, plantas y seres extintos en Arkheia, la base de datos de biodiversidad mundial.">
+    <meta name="keywords" content="biologia, animales, especies extintas, dinosaurios, naturaleza, enciclopedia animal, arkheia">
+    <meta name="author" content="Arkheia Team">
+
+    <style>
+        /* Un diseño básico y limpio para empezar */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .search-container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #2c5d3f; /* Verde biológico */
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: #2c5d3f;
+        }
+        button {
+            background-color: #2c5d3f;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #1e3f2b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <h1>Arkheia</h1>
+        <p>Explora la biodiversidad del planeta, desde el origen hasta las especies extintas.</p>
+        
+        <div class="search-box">
+            <input type="text" id="animalInput" placeholder="Ej: Tiranosaurio Rex, Lobo Gris...">
+            <button onclick="buscarEspecie()">Buscar</button>
+        </div>
+        
+        <div id="resultado" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        // Aquí programaremos la conexión con la base de datos en el siguiente paso
+        function buscarEspecie() {
+            const busqueda = document.getElementById('animalInput').value;
+            if(busqueda) {
+                document.getElementById('resultado').innerHTML = `<p>Buscando <strong>${busqueda}</strong> en la base de datos de Arkheia...</p>`;
+            } else {
+                alert("Por favor, escribe el nombre de un animal.");
+            }
+        }
+    </script>
+
+</body>
+</html>
