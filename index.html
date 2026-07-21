@@ -98,7 +98,7 @@
             margin-bottom: 25px;
         }
         
-        /* Contenedor masivo de Wikipedia limpia */
+        /* Contenido del Artículo */
         .wiki-full-content {
             line-height: 1.8;
             font-size: 1.1rem;
@@ -112,25 +112,17 @@
             margin-top: 35px;
             font-size: 1.6rem;
         }
-        .wiki-full-content h3 {
-            color: #2c5d3f;
-            margin-top: 25px;
-        }
         .wiki-full-content p {
             margin-bottom: 20px;
             text-align: justify;
         }
-        .wiki-full-content ul {
-            padding-left: 20px;
-            margin-bottom: 20px;
-        }
 
-        /* Tabla Taxonómica Mejorada */
+        /* Ficha Taxonómica */
         .taxo-box {
             background: #f8faf9;
             padding: 25px;
             border-radius: 12px;
-            margin-top: 30px;
+            margin-top: 20px;
             border: 1px solid #e8edea;
         }
         .taxo-box h3 {
@@ -179,23 +171,23 @@
                 return;
             }
 
-            contenedor.innerHTML = `<div class="loading">Conectando con bases científicas. Extrayendo artículo enciclopédico completo...</div>`;
+            contenedor.innerHTML = `<div class="loading">Cargando base de datos masiva...</div>`;
 
             try {
-                // 1. Buscamos el texto e imágenes estructuradas completas de Wikipedia móvil (viene más limpio)
+                // 1. Wikipedia móvil para el texto estructurado completo
                 const wikiUrl = `https://es.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(query)}`;
                 const wikiRes = await fetch(wikiUrl);
                 
-                // 2. Buscamos el resumen para la imagen en alta calidad
+                // 2. Resumen rápido para la fotografía de portada
                 const summaryUrl = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
                 const summaryRes = await fetch(summaryUrl);
                 
-                // 3. Consulta para verificar la taxonomía exacta libre de errores cruzados
+                // 3. Taxonomía biológica
                 const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(query)}&limit=10`;
                 const gbifRes = await fetch(gbifUrl);
 
                 if (!wikiRes.ok) {
-                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos un documento extenso para "${query}". Intenta con su nombre común exacto.</p>`;
+                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos datos suficientes para "${query}". Prueba con otro nombre.</p>`;
                     return;
                 }
 
@@ -203,47 +195,36 @@
                 const summaryDatos = await summaryRes.json();
                 const gbifDatos = await gbifRes.json();
 
-                // Unimos todas las secciones de texto de Wikipedia en un bloque gigante de lectura continua
-                let textoCompletoHTML = "";
-                
-                // Sección introductoria
+                // Procesamos y limpiamos las secciones del texto completo
+                let textoHTML = "";
                 if(wikiDatos.lead && wikiDatos.lead.sections) {
-                    textoCompletoHTML += wikiDatos.lead.sections[0].text;
+                    textoHTML += wikiDatos.lead.sections[0].text;
                 }
-                
-                // Resto de las secciones (Historia, alimentación, extinción, etc.)
                 if(wikiDatos.remaining && wikiDatos.remaining.sections) {
                     wikiDatos.remaining.sections.forEach(sec => {
-                        // Saltamos las referencias o enlaces finales para que quede limpio
-                        if(sec.anchor !== "Referencias" && sec.anchor !== "Enlaces_externos" && sec.anchor !== "Bibliografía") {
-                            textoCompletoHTML += `<h2>${sec.line}</h2>` + sec.text;
+                        if(!["Referencias", "Enlaces externos", "Bibliografía", "Véase también"].includes(sec.line)) {
+                            textoHTML += `<h2>${sec.line}</h2>` + sec.text;
                         }
                     });
                 }
 
-                // Limpiamos etiquetas raras de Wikipedia que rompen el diseño (como enlaces internos rotos)
-                textoCompletoHTML = textoCompletoHTML.replace(/<a href="[^"]*">/g, "");
-                textoCompletoHTML = textoCompletoHTML.replace(/<\/a>/g, "");
-                textoCompletoHTML = textoCompletoHTML.replace(/<span class="[^"]*">/g, "");
-                textoCompletoHTML = textoCompletoHTML.replace(/<\/span>/g, "");
+                // Limpieza total de etiquetas conflictivas o tablas rotas de Wikipedia
+                textoHTML = textoHTML.replace(/<a\b[^>]*>/gi, "").replace(/<\/a>/gi, "");
+                textoHTML = textoHTML.replace(/<table\b[^>]*>([\s\S]*?)<\/table>/gi, ""); 
+                textoHTML = textoHTML.replace(/<div class="hatnote[^"]*">([\s\S]*?)<\/div>/gi, "");
 
-                // Asignamos imagen principal
+                // Fotografía principal
                 const imagenUrl = summaryDatos.thumbnail ? summaryDatos.thumbnail.source : 'https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=900';
 
-                // Corregir taxonomía biológica cruzada
-                let ciencia = {};
-                if (gbifDatos.results && gbifDatos.results.length > 0) {
-                    // Si el nombre buscado es Dodo o similar, forzamos que traiga el registro de las aves/animales correctos
-                    ciencia = gbifDatos.results.find(r => r.class === 'Aves' || r.kingdom === 'Animalia') || gbifDatos.results[0];
-                }
+                // Ajuste biológico preciso
+                let ciencia = gbifDatos.results.find(r => r.class === 'Aves' || r.kingdom === 'Animalia') || gbifDatos.results[0] || {};
 
                 const nombreCientifico = ciencia.scientificName || summaryDatos.title || query;
                 const reino = ciencia.kingdom || "Animalia";
                 const filo = ciencia.phylum || "Chordata (Vertebrados)";
-                const clase = ciencia.class || "Clasificación registrada en el texto";
-                const familia = ciencia.family || "Ver detalle en el artículo";
+                const clase = ciencia.class || "Detallada en el texto";
+                const familia = ciencia.family || "Revisar en el artículo";
 
-                // Desplegamos la enciclopedia masiva en la pantalla
                 contenedor.innerHTML = `
                     <div class="species-card">
                         <img class="species-image" src="${imagenUrl}" alt="${summaryDatos.title}">
@@ -262,7 +243,7 @@
                             </div>
 
                             <div class="wiki-full-content">
-                                ${textoCompletoHTML}
+                                ${textoHTML}
                             </div>
                         </div>
                     </div>
@@ -270,7 +251,7 @@
 
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al procesar la base de datos de Arkheia.</p>`;
+                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Ocurrió un error al procesar la información de Arkheia.</p>`;
             }
         }
     </script>
