@@ -10,18 +10,16 @@
     <meta name="author" content="Arkheia Team">
 
     <style>
-        /* Un diseño básico y limpio para empezar */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
             color: #333;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
         }
         .search-container {
             text-align: center;
@@ -29,11 +27,12 @@
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
+            margin-top: 50px;
         }
         h1 {
-            color: #2c5d3f; /* Verde biológico */
+            color: #2c5d3f; 
             font-size: 3rem;
             margin-bottom: 10px;
         }
@@ -69,6 +68,30 @@
         button:hover {
             background-color: #1e3f2b;
         }
+        /* Estilos para los resultados */
+        .card {
+            background: #fff;
+            border-left: 5px solid #2c5d3f;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: left;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #2c5d3f;
+        }
+        .info-item {
+            margin: 8px 0;
+        }
+        .badge {
+            background: #e0e0e0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -78,21 +101,53 @@
         <p>Explora la biodiversidad del planeta, desde el origen hasta las especies extintas.</p>
         
         <div class="search-box">
-            <input type="text" id="animalInput" placeholder="Ej: Tiranosaurio Rex, Lobo Gris...">
+            <input type="text" id="animalInput" placeholder="Ej: Panthera leo, Tyrannosaurus...">
             <button onclick="buscarEspecie()">Buscar</button>
         </div>
         
-        <div id="resultado" style="margin-top: 20px;"></div>
+        <div id="resultado"></div>
     </div>
 
     <script>
-        // Aquí programaremos la conexión con la base de datos en el siguiente paso
-        function buscarEspecie() {
-            const busqueda = document.getElementById('animalInput').value;
-            if(busqueda) {
-                document.getElementById('resultado').innerHTML = `<p>Buscando <strong>${busqueda}</strong> en la base de datos de Arkheia...</p>`;
-            } else {
-                alert("Por favor, escribe el nombre de un animal.");
+        // CONEXIÓN A LA BASE DE DATOS CIENTÍFICA (GBIF API)
+        async function buscarEspecie() {
+            const busqueda = document.getElementById('animalInput').value.trim();
+            const contenedorResultado = document.getElementById('resultado');
+            
+            if(!busqueda) {
+                alert("Por favor, escribe el nombre de una especie.");
+                return;
+            }
+
+            contenedorResultado.innerHTML = `<p>Buscando en la base de datos global de Arkheia...</p>`;
+
+            try {
+                // Hacemos la consulta a la base de datos mundial de biodiversidad
+                const url = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(busqueda)}&limit=1`;
+                const respuesta = await fetch(url);
+                const datos = await respuesta.json();
+
+                if (datos.results && datos.results.length > 0) {
+                    const especie = datos.results[0];
+                    
+                    // Armamos la respuesta en la pantalla con los datos reales
+                    contenedorResultado.innerHTML = `
+                        <div class="card">
+                            <h2>${especie.scientificName}</h2>
+                            <div class="info-item"><strong>Reino:</strong> ${especie.kingdom || 'Desconocido'}</div>
+                            <div class="info-item"><strong>Filo (Clase):</strong> ${especie.phylum || 'Desconocido'} -> ${especie.class || 'Desconocido'}</div>
+                            <div class="info-item"><strong>Familia:</strong> ${especie.family || 'Desconocido'}</div>
+                            <div class="info-item"><strong>Género:</strong> ${especie.genus || 'Desconocido'}</div>
+                            <div class="info-item"><strong>Estado taxonómico:</strong> <span class="badge">${especie.taxonomicStatus || 'Aceptado'}</span></div>
+                        </div>
+                    `;
+                } else {
+                    contenedorResultado.innerHTML = `<p style="color: red;">No se encontraron registros biológicos para "${busqueda}". Intenta con el nombre científico o inglés (ej: Tyrannosaurus, Puma concolor, Dodo).</p>`;
+                }
+
+            } catch (error) {
+                console.error(error);
+                contenedorResultado.innerHTML = `<p style="color: red;">Hubo un error al conectar con la base de datos externa.</p>`;
             }
         }
     </script>
