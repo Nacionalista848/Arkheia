@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arkheia | Enciclopedia Universal de Biodiversidad</title>
+    <title>Arkheia | Enciclopedia de Anatomía Animal y Biología</title>
     
-    <meta name="description" content="Arkheia - Enciclopedia Universal de Biodiversidad por Nacionalista848.">
-    <meta name="keywords" content="Arkheia, Nacionalista848, enciclopedia, animales, plantas, anatomia, morfologia">
+    <meta name="description" content="Arkheia - Enciclopedia Universal de Anatomía Animal y Registros Biológicos por Nacionalista848.">
+    <meta name="keywords" content="Arkheia, Nacionalista848, enciclopedia, animales, anatomia, morfologia, esqueleto">
     <meta name="author" content="Nacionalista848">
     
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #f0f4f1;
+            background-color: #f4f6f8;
             color: #2c3e50;
             margin: 0;
             padding: 20px;
@@ -25,14 +25,14 @@
             background: white;
             padding: 35px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.06);
             max-width: 950px;
             width: 95%;
             text-align: center;
             margin-top: 30px;
         }
         h1 {
-            color: #1b4d3e; 
+            color: #2c3e50; 
             font-size: 3.5rem;
             margin: 0 0 10px 0;
             font-weight: 800;
@@ -55,12 +55,13 @@
             border-radius: 12px;
             font-size: 16px;
             outline: none;
+            transition: border-color 0.2s;
         }
         input[type="text"]:focus {
-            border-color: #1b4d3e;
+            border-color: #3498db;
         }
         button {
-            background-color: #1b4d3e;
+            background-color: #2c3e50;
             color: white;
             border: none;
             padding: 15px 28px;
@@ -68,9 +69,10 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
+            transition: background-color 0.2s;
         }
         button:hover {
-            background-color: #113327;
+            background-color: #1a252f;
         }
         .species-card {
             background: #ffffff;
@@ -79,7 +81,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
             margin-top: 30px;
             text-align: left;
-            border: 1px solid #eef2f0;
+            border: 1px solid #eef2f3;
         }
         .species-image {
             width: 100%;
@@ -92,7 +94,7 @@
         }
         .species-title {
             font-size: 2.8rem;
-            color: #1b4d3e;
+            color: #2c3e50;
             margin: 0 0 5px 0;
         }
         .species-scientific {
@@ -111,16 +113,16 @@
             .info-wrapper { grid-template-columns: 1fr; }
         }
         .taxo-box, .anatomy-box {
-            background: #f8faf9;
+            background: #f8f9fa;
             padding: 24px;
             border-radius: 12px;
-            border: 1px solid #e8edea;
+            border: 1px solid #e9ecef;
         }
         .taxo-box h3, .anatomy-box h3 {
             margin-top: 0;
-            color: #1b4d3e;
+            color: #2c3e50;
             font-size: 1.25rem;
-            border-bottom: 1px solid #e2e8e4;
+            border-bottom: 1px solid #dee2e6;
             padding-bottom: 8px;
             margin-bottom: 14px;
         }
@@ -139,7 +141,7 @@
             text-align: justify;
         }
         .taxo-item strong {
-            color: #1b4d3e;
+            color: #2c3e50;
         }
         .wiki-full-content {
             line-height: 1.8;
@@ -148,8 +150,8 @@
             margin-top: 35px;
         }
         .wiki-full-content h2 {
-            color: #1b4d3e;
-            border-bottom: 2px solid #eef2f0;
+            color: #2c3e50;
+            border-bottom: 2px solid #eef2f3;
             padding-bottom: 8px;
             margin-top: 35px;
             font-size: 1.6rem;
@@ -169,11 +171,11 @@
 
     <div class="search-container">
         <h1>Arkheia</h1>
-        <div class="subtitle">El motor de búsqueda definitivo para la biodiversidad, plantas y especies extintas.</div>
+        <div class="subtitle">Archivo documental de anatomía animal, registros biológicos y esqueleto óseo.</div>
         
         <div class="search-box">
-            <input type="text" id="animalInput" placeholder="Busca cualquier animal o planta (Ej: Lirio, Dodo, Girasol, Tigre...)">
-            <button onclick="ejecutarBusquedaMasiva()">Explorar</button>
+            <input type="text" id="animalInput" placeholder="Busca un animal, personaje o hueso (Ej: Perro, Radio, Messi, León...)">
+            <button onclick="ejecutarBusquedaMasiva()">Analizar</button>
         </div>
         
         <div id="resultado"></div>
@@ -181,26 +183,37 @@
 
     <script>
         async function ejecutarBusquedaMasiva() {
-            let query = document.getElementById('animalInput').value.trim();
+            let queryOriginal = document.getElementById('animalInput').value.trim();
             const contenedor = document.getElementById('resultado');
             
-            if(!query) {
-                alert("Escribe el nombre de una especie primero.");
+            if(!queryOriginal) {
+                alert("Por favor, introduce un término de búsqueda.");
                 return;
             }
 
-            contenedor.innerHTML = `<div class="loading">Extrayendo registros biológicos y morfológicos completos...</div>`;
+            contenedor.innerHTML = `<div class="loading">Buscando en los registros bio-documentales masivos...</div>`;
+
+            // --- INYECTOR INTELIGENTE DE CONTEXTO PARA HUESOS/TÉRMINOS AMBIGUOS ---
+            let queryProcesada = queryOriginal;
+            let minuscula = queryOriginal.toLowerCase();
+            const palabrasHueso = ["radio", "cubito", "cúbito", "femur", "fémur", "humero", "húmero", "tibia", "perone", "peroné", "pelvis", "craneo", "cráneo"];
+            
+            if (palabrasHueso.some(hueso => minuscula === hueso || minuscula === hueso + " el hueso" || minuscula === "hueso " + hueso)) {
+                // Si busca un hueso conflictivo, le inyectamos contexto para forzar a Wikipedia a elegir el artículo anatómico
+                queryProcesada = queryOriginal + " hueso anatomia";
+            }
 
             try {
-                let searchUrl = `https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&srlimit=10`;
+                let searchUrl = `https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(queryProcesada)}&format=json&origin=*&srlimit=8`;
                 let searchRes = await fetch(searchUrl);
                 let searchDatos = await searchRes.json();
 
                 if (!searchDatos.query.search || searchDatos.query.search.length === 0) {
-                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos datos para "${query}". Intenta con otra palabra.</p>`;
+                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No se localizó ningún registro para "${queryOriginal}". Intenta de nuevo.</p>`;
                     return;
                 }
 
+                // Selección inteligente del mejor candidato libre de desambiguaciones básicas
                 let candidato = searchDatos.query.search[0];
                 for(let item of searchDatos.query.search) {
                     let titulo = item.title.toLowerCase();
@@ -208,10 +221,8 @@
                     if (titulo.includes("desambiguación") || extracto.includes("desambiguación") || extracto.includes("pueden referirse a")) {
                         continue;
                     }
-                    if (extracto.includes("planta") || extracto.includes("flor") || extracto.includes("animal") || extracto.includes("especie") || extracto.includes("género")) {
-                        candidato = item;
-                        break;
-                    }
+                    candidato = item;
+                    break;
                 }
 
                 let tituloCorregido = candidato.title;
@@ -230,67 +241,60 @@
                 textoHTML = textoHTML.split(/<h2>\s*(?:Referencias|Enlaces externos|Bibliografía|Véase también)\s*<\/h2>/i)[0];
                 const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=900';
 
-                let esPlantaDetectada = textoHTML.toLowerCase().includes("planta") || textoHTML.toLowerCase().includes("flor") || textoHTML.toLowerCase().includes("género de plantas") || tituloOficial.toLowerCase() === "lirio";
-
-                // Consulta de Taxonomía en GBIF
-                const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(tituloOficial)}&limit=20`;
+                // Consulta de Taxonomía en GBIF (exclusiva para animales/organismos)
+                const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(tituloOficial)}&limit=10`;
                 const gbifRes = await fetch(gbifUrl);
                 const gbifDatos = await gbifRes.json();
 
                 let ciencia = {};
                 if (gbifDatos.results && gbifDatos.results.length > 0) {
-                    if (esPlantaDetectada) {
-                        ciencia = gbifDatos.results.find(r => r.kingdom === 'Plantae') || gbifDatos.results[0];
-                    } else {
-                        ciencia = gbifDatos.results.find(r => r.kingdom === 'Animalia' && r.class !== 'Arachnida' && r.class !== 'Insecta') || gbifDatos.results[0];
-                    }
+                    ciencia = gbifDatos.results.find(r => r.kingdom === 'Animalia') || gbifDatos.results[0];
                 }
 
-                let reino = ciencia.kingdom || (esPlantaDetectada ? "Plantae" : "Animalia");
-                let filo = ciencia.phylum || ciencia.division || (esPlantaDetectada ? "Magnoliophyta" : "Chordata");
-                let clase = ciencia.class || (esPlantaDetectada ? "Liliopsida" : "Mammalia");
-                let familia = ciencia.family || (esPlantaDetectada ? "Iridaceae / Liliaceae" : "Desconocida");
-                let nombreCientifico = ciencia.scientificName || (esPlantaDetectada ? "Iris / Lilium" : tituloOficial);
+                let reino = ciencia.kingdom || "Animalia";
+                let filo = ciencia.phylum || ciencia.division || "Chordata";
+                let clase = ciencia.class || "Mammalia";
+                let familia = ciencia.family || "Desconocida";
+                let nombreCientifico = ciencia.scientificName || tituloOficial;
 
-                if (tituloOficial.toLowerCase() === "lirio") {
-                    reino = "Plantae"; filo = "Magnoliophyta"; clase = "Liliopsida"; familia = "Iridaceae"; nombreCientifico = "Iris germanica / Lilium";
-                } else if (tituloOficial.toLowerCase() === "perro") {
+                // Forzados estricto manuales para búsquedas comunes
+                if (tituloOficial.toLowerCase() === "perro") {
                     nombreCientifico = "Canis lupus familiaris"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Canidae";
+                } else if (tituloOficial.toLowerCase() === "león" || tituloOficial.toLowerCase() === "leon") {
+                    nombreCientifico = "Panthera leo"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Felidae";
                 }
 
-                // --- SISTEMA REFORZADO DE EXTRACCIÓN ULTRA-MASIVA ---
+                // --- SISTEMA ADAPTATIVO INTELIGENTE DE EXTRACCIÓN (ANATOMÍA VS DATOS GENERALES) ---
                 const temporalDiv = document.createElement('div');
                 temporalDiv.innerHTML = textoHTML;
                 const parrafos = Array.from(temporalDiv.getElementsByTagName('p'));
                 
-                // Criterios botánicos y zoológicos más amplios
-                const palabrasClave = reino.toLowerCase() === 'plantae' 
-                    ? ["hojas", "tallo", "raíz", "flores", "fruto", "semillas", "corteza", "mide", "perenne", "bulbo", "pétalos", "cáliz", "corola", "estambres", "especie", "género"]
-                    : ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "plumaje", "patas", "garras", "pelo", "pelaje", "longitud", "cola", "orejas", "alimentación", "mamífero"];
+                // Filtros anatómicos puros
+                const palabrasAnatomia = ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "patas", "garras", "pelo", "pelaje", "longitud", "cola", "articulación", "hueso", "músculo", "extremidad"];
 
                 let parrafosFiltrados = [];
                 for (let p of parrafos) {
                     let contenido = p.textContent.trim();
                     let textMin = contenido.toLowerCase();
-                    let coincide = palabrasClave.some(palabra => textMin.includes(palabra));
+                    let coincide = palabrasAnatomia.some(palabra => textMin.includes(palabra));
                     
                     if (coincide && contenido.length > 50) {
                         parrafosFiltrados.push(contenido);
                     }
                 }
 
-                // ESTRATEGIA DE VOLUMEN: Si los filtros no juntan suficiente texto, extraemos masivamente los primeros 4 párrafos del artículo
                 let detallesEstructura = "";
-                if (parrafosFiltrados.length >= 2) {
-                    // Tomamos hasta 4 párrafos del filtro para robustecer la caja
+                let nombreCajaDerecha = "Anatomía y Estructura Corporal";
+
+                if (parrafosFiltrados.length >= 1) {
+                    // Si detecta datos anatómicos o estructurales, los renderiza masivamente
                     detallesEstructura = parrafosFiltrados.slice(0, 4).map(texto => `<p>${texto}</p>`).join("");
                 } else {
-                    // Carga masiva directa por defecto si falla el escáner selectivo
+                    // CASO PERSONAJES (Messi) O CONCEPTOS ABSTRACTOS: Si no hay anatomía, extrae masivamente la biografía/resumen
+                    nombreCajaDerecha = "Información General y Datos Clave";
                     let parrafosValidos = parrafos.filter(p => p.textContent.trim().length > 40);
                     detallesEstructura = parrafosValidos.slice(0, 4).map(p => `<p>${p.textContent.trim()}</p>`).join("");
                 }
-
-                const nombreCajaAnatomia = reino.toLowerCase() === 'plantae' ? "Morfología y Descripción Vegetal" : "Anatomía y Estructura Corporal";
 
                 contenedor.innerHTML = `
                     <div class="species-card">
@@ -301,7 +305,7 @@
                             
                             <div class="info-wrapper">
                                 <div class="taxo-box">
-                                    <h3>Clasificación Biológica</h3>
+                                    <h3>Clasificación Biológica / Registro</h3>
                                     <div class="taxo-grid">
                                         <div class="taxo-item"><strong>Reino:</strong> ${reino}</div>
                                         <div class="taxo-item"><strong>Filo/División:</strong> ${filo}</div>
@@ -311,7 +315,7 @@
                                 </div>
                                 
                                 <div class="anatomy-box">
-                                    <h3>${nombreCajaAnatomia}</h3>
+                                    <h3>${nombreCajaDerecha}</h3>
                                     <div class="anatomy-list">
                                         ${detallesEstructura}
                                     </div>
@@ -327,7 +331,7 @@
 
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al conectar con los servidores biológicos masivos.</p>`;
+                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al conectar con los servidores centrales de documentación.</p>`;
             }
         }
     </script>
