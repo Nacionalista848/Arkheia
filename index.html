@@ -101,8 +101,6 @@
             font-size: 1.3rem;
             margin-bottom: 25px;
         }
-        
-        /* Bloques de Datos de la Ficha */
         .info-wrapper {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -138,8 +136,6 @@
         .taxo-item strong, .anatomy-item strong {
             color: #1b4d3e;
         }
-
-        /* Texto Completo */
         .wiki-full-content {
             line-height: 1.8;
             font-size: 1.1rem;
@@ -171,7 +167,7 @@
         <div class="subtitle">El motor de búsqueda definitivo para la biodiversidad, plantas y especies extintas.</div>
         
         <div class="search-box">
-            <input type="text" id="animalInput" placeholder="Busca un animal o planta (Ej: Dodo, Girasol, Pino, León...)">
+            <input type="text" id="animalInput" placeholder="Busca un animal o planta (Ej: Dodo, Lirio, Girasol, León...)">
             <button onclick="ejecutarBusquedaMasiva()">Explorar</button>
         </div>
         
@@ -180,7 +176,7 @@
 
     <script>
         async function ejecutarBusquedaMasiva() {
-            const query = document.getElementById('animalInput').value.trim();
+            let query = document.getElementById('animalInput').value.trim();
             const contenedor = document.getElementById('resultado');
             
             if(!query) {
@@ -191,58 +187,75 @@
             contenedor.innerHTML = `<div class="loading">Escaneando archivos biológicos y botánicos universales...</div>`;
 
             try {
-                // Buscador inteligente de Wikipedia para corregir tildes y nombres comunes
-                const searchUrl = `https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&srlimit=1`;
-                const searchRes = await fetch(searchUrl);
-                const searchDatos = await searchRes.json();
+                // Modificamos la búsqueda para evitar páginas de desambiguación vacías e ir al grano
+                let searchUrl = `https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&srlimit=5`;
+                let searchRes = await fetch(searchUrl);
+                let searchDatos = await searchRes.json();
 
                 if (!searchDatos.query.search || searchDatos.query.search.length === 0) {
                     contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos datos para "${query}". Intenta con otra palabra.</p>`;
                     return;
                 }
 
-                const tituloCorregido = searchDatos.query.search[0].title;
+                // Si la primera opción es una desambiguación, buscamos en la lista una que diga planta o género
+                let candidato = searchDatos.query.search[0];
+                for(let item of searchDatos.query.search) {
+                    let fragmento = item.snippet.toLowerCase();
+                    if(fragmento.includes("planta") || fragmento.includes("género de plantas") || fragmento.includes("flor") || fragmento.includes("árbol")) {
+                        candidato = item;
+                        break;
+                    }
+                }
+
+                let tituloCorregido = candidato.title;
 
                 // Pedimos el artículo completo
-                const wikiUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&format=json&origin=*&titles=${encodeURIComponent(tituloCorregido)}&redirects=1&piprop=thumbnail&pithumbsize=800`;
-                const wikiRes = await fetch(wikiUrl);
-                const wikiDatos = await wikiRes.json();
+                let wikiUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&format=json&origin=*&titles=${encodeURIComponent(tituloCorregido)}&redirects=1&piprop=thumbnail&pithumbsize=800`;
+                let wikiRes = await fetch(wikiUrl);
+                let wikiDatos = await wikiRes.json();
 
-                const paginas = wikiDatos.query.pages;
-                const pageId = Object.keys(paginas)[0];
+                let paginas = wikiDatos.query.pages;
+                let pageId = Object.keys(paginas)[0];
+                let articulo = paginas[pageId];
                 
-                const articulo = paginas[pageId];
                 let tituloOficial = articulo.title; 
-                let textoHTML = articulo.extract; 
+                let textoHTML = articulo.extract || ""; 
 
-                // Limpieza de secciones finales
+                // Si a pesar de todo el texto menciona que es de desambiguación, intentamos un truco botánico agregando (planta)
+                if (textoHTML.includes("desambiguación") || textoHTML.includes("pueden referirse a")) {
+                    let trucoUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&format=json&origin=*&titles=${encodeURIComponent(tituloOficial + " (planta)")}&redirects=1&piprop=thumbnail&pithumbsize=800`;
+                    let trucoRes = await fetch(trucoUrl);
+                    let trucoDatos = await trucoRes.json();
+                    let trucoPaginas = trucoDatos.query.pages;
+                    let trucoId = Object.keys(trucoPaginas)[0];
+                    if (trucoId !== "-1") {
+                        articulo = trucoPaginas[trucoId];
+                        tituloOficial = articulo.title;
+                        textoHTML = articulo.extract;
+                    }
+                }
+
                 textoHTML = textoHTML.split(/<h2>\s*(?:Referencias|Enlaces externos|Bibliografía|Véase también)\s*<\/h2>/i)[0];
-
-                // Imagen destacada
                 const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=900';
 
-                // Búsqueda en GBIF para Taxonomía exacta
+                // Búsqueda científica en GBIF
                 const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(tituloOficial)}&limit=15`;
                 const gbifRes = await fetch(gbifUrl);
                 const gbifDatos = await gbifRes.json();
 
                 let ciencia = {};
                 if (gbifDatos.results && gbifDatos.results.length > 0) {
-                    // Buscamos si el resultado es una planta, hongo o animal real, ignorando arañas e insectos pequeños si es posible
-                    ciencia = gbifDatos.results.find(r => r.kingdom === 'Plantae' || r.kingdom === 'Animalia' && r.class !== 'Arachnida' && r.class !== 'Insecta') || gbifDatos.results[0];
+                    ciencia = gbifDatos.results.find(r => r.kingdom === 'Plantae' || (r.kingdom === 'Animalia' && r.class !== 'Arachnida' && r.class !== 'Insecta')) || gbifDatos.results[0];
                 }
 
-                let reino = ciencia.kingdom || "Falta registrar";
+                let reino = ciencia.kingdom || "Plantae";
                 let filo = ciencia.phylum || ciencia.division || "Magnoliophyta (Plantas con flor)";
                 let clase = ciencia.class || "Magnoliopsida";
                 let familia = ciencia.family || "Desconocida";
                 let nombreCientifico = ciencia.scientificName || tituloOficial;
 
-                // Corrección manual rápida para casos especiales conocidos
                 if (tituloOficial.toLowerCase() === "perro") {
                     nombreCientifico = "Canis lupus familiaris"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Canidae";
-                } else if (tituloOficial.toLowerCase().includes("dodo")) {
-                    nombreCientifico = "Raphus cucullatus"; reino = "Animalia"; filo = "Chordata"; clase = "Aves"; familia = "Columbidae";
                 }
 
                 // --- CEREBRO DE EXTRACCIÓN ANATÓMICA / BOTÁNICA ---
@@ -251,22 +264,20 @@
                 temporalDiv.innerHTML = textoHTML;
                 const parrafos = temporalDiv.getElementsByTagName('p');
                 
-                // Si detecta que es una planta, busca características botánicas. Si es animal, busca anatomía.
                 const palabrasClave = reino.toLowerCase() === 'plantae' 
-                    ? ["hojas", "tallo", "raíz", "flores", "fruto", "semillas", "árbol", "arbusto", "corteza", "mide"]
+                    ? ["hojas", "tallo", "raíz", "flores", "fruto", "semillas", "árbol", "arbusto", "corteza", "mide", "especie de planta"]
                     : ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "plumaje", "patas", "garras", "pelo"];
 
                 for (let p of parrafos) {
                     let textMin = p.textContent.toLowerCase();
                     let coincide = palabrasClave.some(palabra => textMin.includes(palabra));
                     
-                    if (coincide && p.textContent.length > 70 && p.textContent.length < 320) {
+                    if (coincide && p.textContent.length > 60 && p.textContent.length < 320) {
                         detallesEstructura = p.textContent;
                         break;
                     }
                 }
 
-                // Cambiamos el nombre de la caja según si es planta o animal
                 const nombreCajaAnatomia = reino.toLowerCase() === 'plantae' ? "Morfología y Estructura Vegetal" : "Anatomía y Estructura Corporal";
 
                 contenedor.innerHTML = `
