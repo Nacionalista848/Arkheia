@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arkheia | Archivo Político e Histórico Global</title>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #2c3e50;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .search-container {
+            background: white;
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 900px;
+            width: 95%;
+            text-align: center;
+            margin-top: 30px;
+        }
+        h1 {
+            color: #1a365d; 
+            font-size: 3.5rem;
+            margin: 0 0 10px 0;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+        .search-box {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            background-color: #f8fafc;
+        }
+        input[type="text"]:focus {
+            border-color: #2b6cb0;
+            background-color: #fff;
+        }
+        button {
+            background-color: #2b6cb0;
+            color: white;
+            border: none;
+            padding: 15px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #1a365d;
+        }
+        .country-card {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+            margin-top: 30px;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+        }
+        .country-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            background-color: #f7fafc;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .country-content {
+            padding: 35px;
+        }
+        .country-title {
+            font-size: 2.8rem;
+            color: #1a365d;
+            margin: 0 0 25px 0;
+        }
+        .data-box {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #edf2f7;
+        }
+        .data-box h3 {
+            margin-top: 0;
+            color: #2b6cb0;
+            font-size: 1.3rem;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .data-item {
+            font-size: 1.05rem;
+        }
+        .data-item strong {
+            color: #2d3748;
+        }
+        .wiki-full-content {
+            line-height: 1.9;
+            font-size: 1.1rem;
+            color: #4a5568;
+        }
+        .wiki-full-content h2 {
+            color: #1a365d;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 8px;
+            margin-top: 40px;
+            font-size: 1.6rem;
+        }
+        .wiki-full-content p {
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        .loading {
+            color: #718096;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <h1>Arkheia Político</h1>
+        <div class="subtitle">Archivo documental de historia, sistemas de gobierno y evolución política global.</div>
+        
+        <div class="search-box">
+            <input type="text" id="countryInput" placeholder="Busca un país o imperio (Ej: México, España, Imperio Romano, Japón)">
+            <button onclick="buscarPoliticaPais()">Analizar</button>
+        </div>
+        
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        async function buscarPoliticaPais() {
+            const query = document.getElementById('countryInput').value.trim();
+            const contenedor = document.getElementById('resultado');
+            
+            if(!query) {
+                alert("Por favor, introduce el nombre de un país.");
+                return;
+            }
+
+            contenedor.innerHTML = `<div class="loading">Abriendo archivos históricos y políticos del Estado...</div>`;
+
+            try {
+                // Consultamos la API de Wikipedia con redirecciones automáticas activadas
+                const wikiUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&format=json&origin=*&titles=${encodeURIComponent(query)}&redirects=1&piprop=thumbnail&pithumbsize=1000`;
+                const wikiRes = await fetch(wikiUrl);
+                const wikiDatos = await wikiRes.json();
+
+                const paginas = wikiDatos.query.pages;
+                const pageId = Object.keys(paginas)[0];
+                
+                if (pageId === "-1") {
+                    contenedor.innerHTML = `<p style="color: #c53030; padding: 20px;">No se localizó ningún registro geopolítico para "${query}". Intenta de nuevo.</p>`;
+                    return;
+                }
+
+                const articulo = paginas[pageId];
+                let tituloOficial = articulo.title; 
+                let textoHTML = articulo.extract; 
+
+                // Filtramos secciones innecesarias del final
+                textoHTML = textoHTML.split(/<h2>\s*(?:Referencias|Enlaces externos|Bibliografía|Véase también|Notas)\s*<\/h2>/i)[0];
+
+                // Bandera o Mapa del país
+                const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1000';
+
+                // Intentamos deducir de forma básica algunos datos comunes para la ficha limpia
+                let regimen = "República / Monarquía Constitucional";
+                if(textoHTML.toLowerCase().includes("monarquía")) regimen = "Monarquía Constitucional / Parlamentaria";
+                if(textoHTML.toLowerCase().includes("república federal")) regimen = "República Federal Constitucional";
+
+                contenedor.innerHTML = `
+                    <div class="country-card">
+                        <img class="country-image" src="${imagenUrl}" alt="Emblema de ${tituloOficial}">
+                        <div class="country-content">
+                            <h2 class="country-title">${tituloOficial}</h2>
+                            
+                            <div class="data-box">
+                                <h3>Ficha Político-Geográfica</h3>
+                                <div class="data-grid">
+                                    <div class="data-item"><strong>Categoría:</strong> Estado Soberano / Entidad Histórica</div>
+                                    <div class="data-item"><strong>Sistema Político:</strong> Estatus en el artículo</div>
+                                    <div class="data-item"><strong>Información:</strong> Histórica Completa</div>
+                                    <div class="data-item"><strong>Fuente:</strong> Archivo Enciclopédico</div>
+                                </div>
+                            </div>
+
+                            <div class="wiki-full-content">
+                                ${textoHTML}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error(error);
+                contenedor.innerHTML = `<p style="color: #c53030; padding: 20px;">Error al conectar con la base de datos geopolítica.</p>`;
+            }
+        }
+    </script>
+
+</body>
+</html>
