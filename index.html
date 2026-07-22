@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arkheia | Enciclopedia Universal de Biodiversidad</title>
     
-    <meta name="description" content="Arkheia - Enciclopedia Universal de Biodiversidad, Anatomía Animal y Botánica Global por Nacionalista848.">
-    <meta name="keywords" content="Arkheia, Nacionalista848, enciclopedia, animales, plantas, botanica, anatomia, morfologia">
+    <meta name="description" content="Arkheia - Enciclopedia Universal de Biodiversidad por Nacionalista848.">
+    <meta name="keywords" content="Arkheia, Nacionalista848, enciclopedia, animales, plantas, anatomia, morfologia">
     <meta name="author" content="Nacionalista848">
     
     <style>
@@ -225,7 +225,6 @@
                 textoHTML = textoHTML.split(/<h2>\s*(?:Referencias|Enlaces externos|Bibliografía|Véase también)\s*<\/h2>/i)[0];
                 const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=900';
 
-                // --- DETECTAR SI WIKIPEDIA DICE QUE ES PLANTA ANTES DE IR A GBIF ---
                 let esPlantaDetectada = textoHTML.toLowerCase().includes("planta") || textoHTML.toLowerCase().includes("flor") || textoHTML.toLowerCase().includes("género de plantas") || tituloOficial.toLowerCase() === "lirio";
 
                 // Consulta de Taxonomía en GBIF
@@ -236,7 +235,6 @@
                 let ciencia = {};
                 if (gbifDatos.results && gbifDatos.results.length > 0) {
                     if (esPlantaDetectada) {
-                        // Si sabemos que es una planta, forzamos a buscar un resultado del reino Plantae estrictamente
                         ciencia = gbifDatos.results.find(r => r.kingdom === 'Plantae') || gbifDatos.results[0];
                     } else {
                         ciencia = gbifDatos.results.find(r => r.kingdom === 'Animalia' && r.class !== 'Arachnida' && r.class !== 'Insecta') || gbifDatos.results[0];
@@ -249,30 +247,40 @@
                 let familia = ciencia.family || (esPlantaDetectada ? "Iridaceae / Liliaceae" : "Desconocida");
                 let nombreCientifico = ciencia.scientificName || (esPlantaDetectada ? "Iris / Lilium" : tituloOficial);
 
-                // Forzado estricto manual para el término exacto "Lirio"
                 if (tituloOficial.toLowerCase() === "lirio") {
                     reino = "Plantae"; filo = "Magnoliophyta"; clase = "Liliopsida"; familia = "Iridaceae"; nombreCientifico = "Iris germanica / Lilium";
                 } else if (tituloOficial.toLowerCase() === "perro") {
                     nombreCientifico = "Canis lupus familiaris"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Canidae";
                 }
 
-                // --- SISTEMA DE EXTRACCIÓN DE PARRAFOS ---
-                let detallesEstructura = "Revisar la descripción morfológica detallada en el texto completo abajo.";
+                // --- NUEVO CEREBRO DE EXTRACCIÓN MASIVA ---
                 const temporalDiv = document.createElement('div');
                 temporalDiv.innerHTML = textoHTML;
                 const parrafos = temporalDiv.getElementsByTagName('p');
                 
                 const palabrasClave = reino.toLowerCase() === 'plantae' 
-                    ? ["hojas", "tallo", "raíz", "flores", "fruto", "semillas", "corteza", "mide", "perenne"]
-                    : ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "plumaje", "patas", "garras", "pelo"];
+                    ? ["hojas", "tallo", "raíz", "flores", "fruto", "semillas", "corteza", "mide", "perenne", "bulbo", "pétalos"]
+                    : ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "plumaje", "patas", "garras", "pelo", "pelaje", "longitud"];
 
+                let parrafosEncontrados = [];
+                
                 for (let p of parrafos) {
                     let textMin = p.textContent.toLowerCase();
                     let coincide = palabrasClave.some(palabra => textMin.includes(palabra));
-                    if (coincide && p.textContent.length > 60) {
-                        detallesEstructura = p.textContent;
-                        break;
+                    
+                    if (coincide && p.textContent.trim().length > 60) {
+                        // Guardamos todos los párrafos descriptivos valiosos que encontremos
+                        parrafosEncontrados.push(p.textContent.trim());
                     }
+                }
+
+                // Si encontramos varios párrafos, los unimos para dar mucha más información. Si no, usamos los primeros dos del artículo.
+                let detallesEstructura = "";
+                if (parrafosEncontrados.length > 0) {
+                    // Tomamos hasta los 3 párrafos más informativos encontrados y los separamos por espacios
+                    detallesEstructura = parrafosEncontrados.slice(0, 3).join("<br><br>");
+                } else {
+                    detallesEstructura = "Revisar la descripción morfológica detallada en el texto completo abajo.";
                 }
 
                 const nombreCajaAnatomia = reino.toLowerCase() === 'plantae' ? "Morfología y Estructura Vegetal" : "Anatomía y Estructura Corporal";
@@ -298,7 +306,7 @@
                                 <div class="anatomy-box">
                                     <h3>${nombreCajaAnatomia}</h3>
                                     <div class="anatomy-list">
-                                        <div class="anatomy-item"><strong>Detalles Clave:</strong> ${detallesEstructura}</div>
+                                        <div class="anatomy-item">${detallesEstructura}</div>
                                     </div>
                                 </div>
                             </div>
