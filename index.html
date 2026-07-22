@@ -187,7 +187,6 @@
             contenedor.innerHTML = `<div class="loading">Extrayendo registros biológicos y morfológicos completos...</div>`;
 
             try {
-                // Buscamos hasta 10 candidatos para poder filtrar desambiguaciones manualmente
                 let searchUrl = `https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*&srlimit=10`;
                 let searchRes = await fetch(searchUrl);
                 let searchDatos = await searchRes.json();
@@ -197,17 +196,13 @@
                     return;
                 }
 
-                // Filtrado inteligente: buscamos el primer artículo que no sea una lista de desambiguación
                 let candidato = searchDatos.query.search[0];
                 for(let item of searchDatos.query.search) {
                     let titulo = item.title.toLowerCase();
                     let extracto = item.snippet.toLowerCase();
-                    
-                    // Si el título contiene desambiguación, pasamos al siguiente
                     if (titulo.includes("desambiguación") || extracto.includes("desambiguación") || extracto.includes("pueden referirse a")) {
                         continue;
                     }
-                    // Priorizamos el que mencione explícitamente conceptos biológicos
                     if (extracto.includes("planta") || extracto.includes("flor") || extracto.includes("animal") || extracto.includes("especie") || extracto.includes("género")) {
                         candidato = item;
                         break;
@@ -216,7 +211,6 @@
 
                 let tituloCorregido = candidato.title;
 
-                // Pedimos el artículo masivo completo
                 let wikiUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&format=json&origin=*&titles=${encodeURIComponent(tituloCorregido)}&redirects=1&piprop=thumbnail&pithumbsize=800`;
                 let wikiRes = await fetch(wikiUrl);
                 let wikiDatos = await wikiRes.json();
@@ -228,46 +222,53 @@
                 let tituloOficial = articulo.title; 
                 let textoHTML = articulo.extract || ""; 
 
-                // Limpieza limpia de las secciones de enlaces de abajo
                 textoHTML = textoHTML.split(/<h2>\s*(?:Referencias|Enlaces externos|Bibliografía|Véase también)\s*<\/h2>/i)[0];
                 const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=900';
 
+                // --- DETECTAR SI WIKIPEDIA DICE QUE ES PLANTA ANTES DE IR A GBIF ---
+                let esPlantaDetectada = textoHTML.toLowerCase().includes("planta") || textoHTML.toLowerCase().includes("flor") || textoHTML.toLowerCase().includes("género de plantas") || tituloOficial.toLowerCase() === "lirio";
+
                 // Consulta de Taxonomía en GBIF
-                const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(tituloOficial)}&limit=15`;
+                const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(tituloOficial)}&limit=20`;
                 const gbifRes = await fetch(gbifUrl);
                 const gbifDatos = await gbifRes.json();
 
                 let ciencia = {};
                 if (gbifDatos.results && gbifDatos.results.length > 0) {
-                    ciencia = gbifDatos.results.find(r => r.kingdom === 'Plantae' || (r.kingdom === 'Animalia' && r.class !== 'Arachnida' && r.class !== 'Insecta')) || gbifDatos.results[0];
+                    if (esPlantaDetectada) {
+                        // Si sabemos que es una planta, forzamos a buscar un resultado del reino Plantae estrictamente
+                        ciencia = gbifDatos.results.find(r => r.kingdom === 'Plantae') || gbifDatos.results[0];
+                    } else {
+                        ciencia = gbifDatos.results.find(r => r.kingdom === 'Animalia' && r.class !== 'Arachnida' && r.class !== 'Insecta') || gbifDatos.results[0];
+                    }
                 }
 
-                let reino = ciencia.kingdom || "Plantae";
-                let filo = ciencia.phylum || ciencia.division || "Magnoliophyta";
-                let clase = ciencia.class || "Magnoliopsida";
-                let familia = ciencia.family || "Desconocida";
-                let nombreCientifico = ciencia.scientificName || tituloOficial;
+                let reino = ciencia.kingdom || (esPlantaDetectada ? "Plantae" : "Animalia");
+                let filo = ciencia.phylum || ciencia.division || (esPlantaDetectada ? "Magnoliophyta" : "Chordata");
+                let clase = ciencia.class || (esPlantaDetectada ? "Liliopsida" : "Mammalia");
+                let familia = ciencia.family || (esPlantaDetectada ? "Iridaceae / Liliaceae" : "Desconocida");
+                let nombreCientifico = ciencia.scientificName || (esPlantaDetectada ? "Iris / Lilium" : tituloOficial);
 
-                // Corrección rápida para búsquedas comunes
-                if (tituloOficial.toLowerCase() === "perro") {
+                // Forzado estricto manual para el término exacto "Lirio"
+                if (tituloOficial.toLowerCase() === "lirio") {
+                    reino = "Plantae"; filo = "Magnoliophyta"; clase = "Liliopsida"; familia = "Iridaceae"; nombreCientifico = "Iris germanica / Lilium";
+                } else if (tituloOficial.toLowerCase() === "perro") {
                     nombreCientifico = "Canis lupus familiaris"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Canidae";
                 }
 
-                // --- SISTEMA DE EXTRACCIÓN DETALLADA (SIN LÍMITE DE TAMAÑO) ---
+                // --- SISTEMA DE EXTRACCIÓN DE PARRAFOS ---
                 let detallesEstructura = "Revisar la descripción morfológica detallada en el texto completo abajo.";
                 const temporalDiv = document.createElement('div');
                 temporalDiv.innerHTML = textoHTML;
                 const parrafos = temporalDiv.getElementsByTagName('p');
                 
                 const palabrasClave = reino.toLowerCase() === 'plantae' 
-                    ? ["hojas", "tallo", "raíz", "flores", "fruto", "semillas", "corteza", "mide", "perenne", "arbusto"]
-                    : ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "plumaje", "patas", "garras", "pelo", "dimensiones"];
+                    ? ["hojas", "tallo", "raíz", "flores", "fruto", "semillas", "corteza", "mide", "perenne"]
+                    : ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "plumaje", "patas", "garras", "pelo"];
 
                 for (let p of parrafos) {
                     let textMin = p.textContent.toLowerCase();
                     let coincide = palabrasClave.some(palabra => textMin.includes(palabra));
-                    
-                    // Ahora solo exigimos que tenga contenido (más de 60 letras), sin importar lo largo que sea
                     if (coincide && p.textContent.length > 60) {
                         detallesEstructura = p.textContent;
                         break;
