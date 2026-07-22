@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta name="description" content="Arkheia - Enciclopedia Universal de Biodiversidad y Archivo Político Global por Nacionalista848.">
-<meta name="keywords" content="Arkheia, Nacionalista848, enciclopedia, animales, politica, historia">
-<meta name="author" content="Nacionalista848">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arkheia | Enciclopedia Universal de Biodiversidad</title>
+    
+    <meta name="description" content="Arkheia - Enciclopedia Universal de Biodiversidad y Archivo Político Global por Nacionalista848.">
+    <meta name="keywords" content="Arkheia, Nacionalista848, enciclopedia, animales, anatomia, morfologia, historia">
+    <meta name="author" content="Nacionalista848">
     
     <style>
         body {
@@ -100,11 +101,50 @@
             font-size: 1.3rem;
             margin-bottom: 25px;
         }
+        
+        /* Bloques de Datos de la Ficha */
+        .info-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .info-wrapper { grid-template-columns: 1fr; }
+        }
+        .taxo-box, .anatomy-box {
+            background: #f8faf9;
+            padding: 22px;
+            border-radius: 12px;
+            border: 1px solid #e8edea;
+        }
+        .taxo-box h3, .anatomy-box h3 {
+            margin-top: 0;
+            color: #1b4d3e;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #e2e8e4;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+        }
+        .taxo-grid, .anatomy-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            font-size: 1rem;
+        }
+        .anatomy-list {
+            grid-template-columns: 1fr;
+        }
+        .taxo-item strong, .anatomy-item strong {
+            color: #1b4d3e;
+        }
+
+        /* Texto Completo */
         .wiki-full-content {
             line-height: 1.8;
             font-size: 1.1rem;
             color: #34495e;
-            margin-top: 30px;
+            margin-top: 35px;
         }
         .wiki-full-content h2 {
             color: #1b4d3e;
@@ -116,28 +156,6 @@
         .wiki-full-content p {
             margin-bottom: 20px;
             text-align: justify;
-        }
-        .taxo-box {
-            background: #f8faf9;
-            padding: 25px;
-            border-radius: 12px;
-            margin-top: 20px;
-            border: 1px solid #e8edea;
-        }
-        .taxo-box h3 {
-            margin-top: 0;
-            color: #1b4d3e;
-        }
-        .taxo-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-        .taxo-item {
-            font-size: 1.05rem;
-        }
-        .taxo-item strong {
-            color: #1b4d3e;
         }
         .loading {
             color: #7f8c8d;
@@ -170,10 +188,9 @@
                 return;
             }
 
-            contenedor.innerHTML = `<div class="loading">Buscando en los archivos biológicos universales...</div>`;
+            contenedor.innerHTML = `<div class="loading">Buscando en los archivos biológicos y anatómicos universales...</div>`;
 
             try {
-                // añadimos "&redirects=1" para resolver automáticamente sin errores palabras como "perro" o "tiranosaurio"
                 const wikiUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=extracts|pageimages&format=json&origin=*&titles=${encodeURIComponent(query)}&redirects=1&piprop=thumbnail&pithumbsize=800`;
                 const wikiRes = await fetch(wikiUrl);
                 const wikiDatos = await wikiRes.json();
@@ -182,7 +199,7 @@
                 const pageId = Object.keys(paginas)[0];
                 
                 if (pageId === "-1") {
-                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos datos para "${query}". Revisa la ortografía e intenta de nuevo.</p>`;
+                    contenedor.innerHTML = `<p style="color: red; padding: 20px;">No encontramos datos para "${query}". Revisa la ortografía.</p>`;
                     return;
                 }
 
@@ -190,36 +207,52 @@
                 let tituloOficial = articulo.title; 
                 let textoHTML = articulo.extract; 
 
-                // Limpiamos las secciones finales innecesarias
+                // Limpieza de secciones finales
                 textoHTML = textoHTML.split(/<h2>\s*(?:Referencias|Enlaces externos|Bibliografía|Véase también)\s*<\/h2>/i)[0];
 
-                // Imagen real desde el artículo resuelto
-                const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=900'; // Fallback a un gato neutral si no hay foto
+                // Imagen real
+                const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=900';
 
-                // Buscamos en GBIF usando el título oficial corregido de Wikipedia para no cruzar los datos
+                // Búsqueda en GBIF para Taxonomía exacta
                 const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(tituloOficial)}&limit=10`;
                 const gbifRes = await fetch(gbifUrl);
                 const gbifDatos = await gbifRes.json();
 
                 let ciencia = {};
                 if (gbifDatos.results && gbifDatos.results.length > 0) {
-                    // Intentamos priorizar mamíferos, aves o animales reales en vez de insectos/arañas si es una búsqueda común
                     ciencia = gbifDatos.results.find(r => r.kingdom === 'Animalia' && r.class !== 'Arachnida' && r.class !== 'Insecta') || gbifDatos.results[0];
                 }
 
-                // Correcciones manuales directas para asegurar precisión en búsquedas populares
                 let reino = ciencia.kingdom || "Animalia";
                 let filo = ciencia.phylum || "Chordata";
                 let clase = ciencia.class || "Mammalia";
-                let familia = ciencia.family || "Canidae";
-                let nombreCientifico = ciencia.scientificName || "Canis lupus familiaris";
+                let familia = ciencia.family || "Desconocida";
+                let nombreCientifico = ciencia.scientificName || tituloOficial;
 
+                // Forzado manual para búsquedas populares
                 if (tituloOficial.toLowerCase() === "perro") {
-                    nombreCientifico = "Canis lupus familiaris";
-                    reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Canidae";
+                    nombreCientifico = "Canis lupus familiaris"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Canidae";
                 } else if (tituloOficial.toLowerCase().includes("dodo")) {
-                    nombreCientifico = "Raphus cucullatus";
-                    reino = "Animalia"; filo = "Chordata"; clase = "Aves"; familia = "Columbidae";
+                    nombreCientifico = "Raphus cucullatus"; reino = "Animalia"; filo = "Chordata"; clase = "Aves"; familia = "Columbidae";
+                }
+
+                // --- CEREBRO DE EXTRACCIÓN ANATÓMICA Y MORFOLÓGICA ---
+                // Buscamos dinámicamente oraciones que hablen del cuerpo del animal
+                let detallesCuerpo = "Revisar los detalles descriptivos en el artículo completo.";
+                const temporalDiv = document.createElement('div');
+                temporalDiv.innerHTML = textoHTML;
+                const parrafos = temporalDiv.getElementsByTagName('p');
+                
+                let encontrado = false;
+                for (let p of parrafos) {
+                    let t = p.textContent.toLowerCase();
+                    if (t.includes("mide") || t.includes("peso") || t.includes("esqueleto") || t.includes("cráneo") || t.includes("cuerpo") || t.includes("plumaje") || t.includes("anatomía")) {
+                        if (p.textContent.length > 60 && p.textContent.length < 300) {
+                            detallesCuerpo = p.textContent;
+                            encontrado = true;
+                            break;
+                        }
+                    }
                 }
 
                 contenedor.innerHTML = `
@@ -229,13 +262,22 @@
                             <h2 class="species-title">${tituloOficial}</h2>
                             <div class="species-scientific">${nombreCientifico}</div>
                             
-                            <div class="taxo-box">
-                                <h3>Clasificación Biológica Oficial</h3>
-                                <div class="taxo-grid">
-                                    <div class="taxo-item"><strong>Reino:</strong> ${reino}</div>
-                                    <div class="taxo-item"><strong>Filo:</strong> ${filo}</div>
-                                    <div class="taxo-item"><strong>Clase:</strong> ${clase}</div>
-                                    <div class="taxo-item"><strong>Familia:</strong> ${familia}</div>
+                            <div class="info-wrapper">
+                                <div class="taxo-box">
+                                    <h3>Clasificación Biológica</h3>
+                                    <div class="taxo-grid">
+                                        <div class="taxo-item"><strong>Reino:</strong> ${reino}</div>
+                                        <div class="taxo-item"><strong>Filo:</strong> ${filo}</div>
+                                        <div class="taxo-item"><strong>Clase:</strong> ${clase}</div>
+                                        <div class="taxo-item"><strong>Familia:</strong> ${familia}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="anatomy-box">
+                                    <h3>Anatomía y Estructura Corporal</h3>
+                                    <div class="anatomy-list">
+                                        <div class="anatomy-item"><strong>Morfología Clave:</strong> ${detallesCuerpo}</div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -248,7 +290,7 @@
 
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al conectar con los servidores enciclopédicos.</p>`;
+                contenedor.innerHTML = `<p style="color: red; padding: 20px;">Error al conectar con los servidores biológicos.</p>`;
             }
         }
     </script>
