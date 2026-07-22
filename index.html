@@ -174,7 +174,7 @@
         <div class="subtitle">Archivo documental de anatomía animal, registros biológicos y esqueleto óseo.</div>
         
         <div class="search-box">
-            <input type="text" id="animalInput" placeholder="Busca un animal, personaje o hueso (Ej: Perro, Radio, Messi, León...)">
+            <input type="text" id="animalInput" placeholder="Busca un animal o hueso (Ej: Perro, Radio, Fémur, León...)">
             <button onclick="ejecutarBusquedaMasiva()">Analizar</button>
         </div>
         
@@ -193,13 +193,11 @@
 
             contenedor.innerHTML = `<div class="loading">Buscando en los registros bio-documentales masivos...</div>`;
 
-            // --- INYECTOR INTELIGENTE DE CONTEXTO PARA HUESOS/TÉRMINOS AMBIGUOS ---
             let queryProcesada = queryOriginal;
             let minuscula = queryOriginal.toLowerCase();
             const palabrasHueso = ["radio", "cubito", "cúbito", "femur", "fémur", "humero", "húmero", "tibia", "perone", "peroné", "pelvis", "craneo", "cráneo"];
             
             if (palabrasHueso.some(hueso => minuscula === hueso || minuscula === hueso + " el hueso" || minuscula === "hueso " + hueso)) {
-                // Si busca un hueso conflictivo, le inyectamos contexto para forzar a Wikipedia a elegir el artículo anatómico
                 queryProcesada = queryOriginal + " hueso anatomia";
             }
 
@@ -213,7 +211,6 @@
                     return;
                 }
 
-                // Selección inteligente del mejor candidato libre de desambiguaciones básicas
                 let candidato = searchDatos.query.search[0];
                 for(let item of searchDatos.query.search) {
                     let titulo = item.title.toLowerCase();
@@ -241,7 +238,7 @@
                 textoHTML = textoHTML.split(/<h2>\s*(?:Referencias|Enlaces externos|Bibliografía|Véase también)\s*<\/h2>/i)[0];
                 const imagenUrl = articulo.thumbnail ? articulo.thumbnail.source : 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=900';
 
-                // Consulta de Taxonomía en GBIF (exclusiva para animales/organismos)
+                // Consulta de Taxonomía
                 const gbifUrl = `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(tituloOficial)}&limit=10`;
                 const gbifRes = await fetch(gbifUrl);
                 const gbifDatos = await gbifRes.json();
@@ -257,19 +254,16 @@
                 let familia = ciencia.family || "Desconocida";
                 let nombreCientifico = ciencia.scientificName || tituloOficial;
 
-                // Forzados estricto manuales para búsquedas comunes
                 if (tituloOficial.toLowerCase() === "perro") {
                     nombreCientifico = "Canis lupus familiaris"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Canidae";
                 } else if (tituloOficial.toLowerCase() === "león" || tituloOficial.toLowerCase() === "leon") {
                     nombreCientifico = "Panthera leo"; reino = "Animalia"; filo = "Chordata"; clase = "Mammalia"; familia = "Felidae";
                 }
 
-                // --- SISTEMA ADAPTATIVO INTELIGENTE DE EXTRACCIÓN (ANATOMÍA VS DATOS GENERALES) ---
                 const temporalDiv = document.createElement('div');
                 temporalDiv.innerHTML = textoHTML;
                 const parrafos = Array.from(temporalDiv.getElementsByTagName('p'));
                 
-                // Filtros anatómicos puros
                 const palabrasAnatomia = ["mide", "peso", "esqueleto", "cráneo", "cuerpo", "patas", "garras", "pelo", "pelaje", "longitud", "cola", "articulación", "hueso", "músculo", "extremidad"];
 
                 let parrafosFiltrados = [];
@@ -287,10 +281,8 @@
                 let nombreCajaDerecha = "Anatomía y Estructura Corporal";
 
                 if (parrafosFiltrados.length >= 1) {
-                    // Si detecta datos anatómicos o estructurales, los renderiza masivamente
                     detallesEstructura = parrafosFiltrados.slice(0, 4).map(texto => `<p>${texto}</p>`).join("");
                 } else {
-                    // CASO PERSONAJES (Messi) O CONCEPTOS ABSTRACTOS: Si no hay anatomía, extrae masivamente la biografía/resumen
                     nombreCajaDerecha = "Información General y Datos Clave";
                     let parrafosValidos = parrafos.filter(p => p.textContent.trim().length > 40);
                     detallesEstructura = parrafosValidos.slice(0, 4).map(p => `<p>${p.textContent.trim()}</p>`).join("");
